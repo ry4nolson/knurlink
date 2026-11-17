@@ -1,5 +1,20 @@
 (function () {
   const M = window.Matcher;
+
+  const themeToggle = document.getElementById("themeToggle");
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const currentTheme = () => document.documentElement.dataset.theme || (systemDark.matches ? "dark" : "light");
+  const labelThemeToggle = () => {
+    themeToggle.setAttribute("aria-label", currentTheme() === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  };
+  themeToggle.addEventListener("click", () => {
+    const next = currentTheme() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch {}
+    labelThemeToggle();
+  });
+  systemDark.addEventListener("change", labelThemeToggle);
+  labelThemeToggle();
   const PR_URL = "https://github.com/ry4nolson/knurlink/pull/1";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
