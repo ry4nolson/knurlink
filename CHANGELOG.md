@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-17
+
 ### Added
 - Radial picker at the cursor, with one bubble per browser and per Chromium profile
 - Domain rules, path rules, and source app rules, with the most specific link winning
