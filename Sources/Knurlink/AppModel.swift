@@ -1,6 +1,7 @@
 import AppKit
 import KnurlinkCore
 import os
+import ServiceManagement
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -15,6 +16,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var apps: [BrowserApp] = []
     @Published private(set) var sourceApps: [SourceApp] = []
     @Published private(set) var isDefaultBrowser = false
+    @Published private(set) var launchesAtLogin = false
+    @Published private(set) var loginItemNeedsApproval = false
     @Published private(set) var lastError: String?
 
     private let store: ConfigStore
@@ -50,6 +53,28 @@ final class AppModel: ObservableObject {
         let probe = URL(string: "https://example.com")!
         let current = NSWorkspace.shared.urlForApplication(toOpen: probe).flatMap { Bundle(url: $0)?.bundleIdentifier }
         isDefaultBrowser = current != nil && current == Bundle.main.bundleIdentifier
+        refreshLoginItem()
+    }
+
+    func setLaunchesAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            lastError = nil
+        } catch {
+            Self.logger.error("Login item change failed: \(error.localizedDescription, privacy: .public)")
+            lastError = "Could not change launch at login: \(error.localizedDescription)"
+        }
+        refreshLoginItem()
+    }
+
+    private func refreshLoginItem() {
+        let status = SMAppService.mainApp.status
+        launchesAtLogin = status == .enabled || status == .requiresApproval
+        loginItemNeedsApproval = status == .requiresApproval
     }
 
     func isVisible(_ app: BrowserApp) -> Bool {

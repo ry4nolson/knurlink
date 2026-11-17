@@ -15,6 +15,7 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 - **path rules.** `github.com/my-org` matches that path and everything under it, on whole path segments.
 - **source app rules.** leave the link blank and pick an app to route everything that app sends. or fill in both to scope a domain to one app.
 - **"always" checkbox.** tick it in the picker (or press A) to save a domain rule on the spot.
+- **launch at login.** a toggle in settings, off by default. it starts quietly in the menu bar.
 
 when more than one rule matches, the most specific link wins: longer domain first, then longer path. a rule with no link is the fallback.
 

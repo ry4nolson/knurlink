@@ -11,6 +11,7 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
             defaultBrowserSection
+            startupSection
             rulesSection
             browsersSection
         }
@@ -32,6 +33,24 @@ struct SettingsView: View {
                 Button("Make Default") { model.makeDefaultBrowser() }
                     .disabled(model.isDefaultBrowser)
             }
+            .padding(6)
+        }
+    }
+
+    private var startupSection: some View {
+        GroupBox("Startup") {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Launch at login", isOn: Binding(
+                    get: { model.launchesAtLogin },
+                    set: { model.setLaunchesAtLogin($0) }
+                ))
+                if model.loginItemNeedsApproval {
+                    Text("Allow knURLink under System Settings > General > Login Items to finish turning this on.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(6)
         }
     }
