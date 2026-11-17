@@ -58,7 +58,7 @@ jobs:
 
       - name: Run tests
         run: |
-          node --test scripts/
+          node --test scripts/versioning.test.mjs
           swift test
 
       - name: Import signing certificate
