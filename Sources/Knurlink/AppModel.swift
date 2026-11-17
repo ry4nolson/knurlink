@@ -3,6 +3,13 @@ import KnurlinkCore
 import os
 import ServiceManagement
 
+enum RuleTestOutcome {
+    case invalid
+    case noMatch
+    case missingTarget(winner: Rule)
+    case routed(option: BrowserOption, winner: Rule, others: [Rule])
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     private static let logger = Logger(subsystem: "dev.knurlink.Knurlink", category: "config")
@@ -94,6 +101,23 @@ final class AppModel: ObservableObject {
 
     func routedOption(for url: URL, source: String?) -> BrowserOption? {
         DomainMatcher.rule(for: url, source: source, in: config.rules).flatMap { resolve($0.target) }
+    }
+
+    func testOutcome(for input: String, source: String?) -> RuleTestOutcome? {
+        guard !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard let url = DomainMatcher.webURL(from: input) else { return .invalid }
+        let ranked = DomainMatcher.rankedRules(for: url, source: source, in: config.rules)
+        guard let winner = ranked.first else { return .noMatch }
+        guard let option = resolve(winner.target) else { return .missingTarget(winner: winner) }
+        return .routed(option: option, winner: winner, others: Array(ranked.dropFirst()))
+    }
+
+    func describe(_ rule: Rule) -> String {
+        let pattern = RulePattern(rule.pattern).normalized
+        let link = pattern.isEmpty ? "any link" : pattern
+        guard let source = rule.sourceBundleID, !source.isEmpty else { return link }
+        let name = sourceApps.first { $0.bundleID == source }?.name ?? source
+        return "\(link) from \(name)"
     }
 
     func setRule(domain: String, target: BrowserTarget) {

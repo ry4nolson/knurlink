@@ -111,6 +111,35 @@ final class DomainMatcherTests: XCTestCase {
         XCTAssertEqual(DomainMatcher.rule(for: org, source: slack, in: rules)?.target, safari)
     }
 
+    func testRankedRulesListEveryMatchMostSpecificFirst() throws {
+        let safari = BrowserTarget(bundleID: "com.apple.Safari")
+        let rules = [
+            Rule(sourceBundleID: slack, target: safari),
+            Rule(pattern: "github.com", target: brave),
+            Rule(pattern: "tiktok.com", target: brave),
+            Rule(pattern: "github.com/acme-corp", target: chrome),
+            Rule(pattern: "github.com", target: safari),
+        ]
+        let url = try XCTUnwrap(URL(string: "https://github.com/acme-corp/web-app"))
+        let ranked = DomainMatcher.rankedRules(for: url, source: slack, in: rules)
+        XCTAssertEqual(ranked.map(\.id), [rules[3], rules[1], rules[4], rules[0]].map(\.id))
+        XCTAssertEqual(DomainMatcher.rule(for: url, source: slack, in: rules)?.id, rules[3].id)
+        XCTAssertEqual(DomainMatcher.rankedRules(for: url, in: rules).count, 3)
+        let other = try XCTUnwrap(URL(string: "https://example.com"))
+        XCTAssertTrue(DomainMatcher.rankedRules(for: other, in: rules).isEmpty)
+    }
+
+    func testWebURLAcceptsBareDomainsAndRejectsNonLinks() {
+        XCTAssertEqual(DomainMatcher.webURL(from: " vm.tiktok.com/ZT8abc ")?.absoluteString, "https://vm.tiktok.com/ZT8abc")
+        XCTAssertEqual(DomainMatcher.webURL(from: "http://example.com/a?b=1")?.absoluteString, "http://example.com/a?b=1")
+        XCTAssertEqual(DomainMatcher.webURL(from: "HTTPS://Example.com")?.host, "Example.com")
+        XCTAssertNil(DomainMatcher.webURL(from: ""))
+        XCTAssertNil(DomainMatcher.webURL(from: "   "))
+        XCTAssertNil(DomainMatcher.webURL(from: "not a link"))
+        XCTAssertNil(DomainMatcher.webURL(from: "ftp://example.com/file"))
+        XCTAssertNil(DomainMatcher.webURL(from: "https://"))
+    }
+
     func testBlankRuleMatchesNothing() throws {
         let rules = [Rule(target: brave), Rule(pattern: " ", sourceBundleID: "", target: brave)]
         let url = try XCTUnwrap(URL(string: "https://example.com"))

@@ -13,6 +13,7 @@ struct SettingsView: View {
             defaultBrowserSection
             startupSection
             rulesSection
+            RuleTesterView(model: model)
             browsersSection
         }
         .padding(20)

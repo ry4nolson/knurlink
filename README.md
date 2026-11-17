@@ -15,6 +15,7 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 - **path rules.** `github.com/my-org` matches that path and everything under it, on whole path segments.
 - **source app rules.** leave the link blank and pick an app to route everything that app sends. or fill in both to scope a domain to one app.
 - **"always" checkbox.** tick it in the picker (or press A) to save a domain rule on the spot.
+- **test a link.** paste a link in settings to see which rule wins, and which other rules matched but lost.
 - **launch at login.** a toggle in settings, off by default. it starts quietly in the menu bar.
 
 when more than one rule matches, the most specific link wins: longer domain first, then longer path. a rule with no link is the fallback.
@@ -31,6 +32,12 @@ when more than one rule matches, the most specific link wins: longer domain firs
 ```
 
 that builds a release binary, wraps it in `knURLink.app`, ad-hoc signs it, and copies it to `/Applications`. leave off `--install` to just get `dist/knURLink.app`.
+
+to sign with your own Developer ID instead of ad-hoc, name the identity:
+
+```bash
+KNURLINK_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./scripts/build-app.sh --install
+```
 
 then open the app and click **Make Default**. macOS will ask you to confirm. settings live behind the menu bar icon after that.
 
@@ -49,7 +56,7 @@ swift test
 
 - profiles are only detected for Chromium browsers: Chrome, Brave, Edge, Vivaldi, Chromium. Firefox and Safari show up as one bubble each.
 - source app rules depend on macOS reporting who sent the link. links opened with `open` from a terminal come through with no sender.
-- the app is ad-hoc signed, not notarized. it's meant to be built on the machine that runs it.
+- the app is ad-hoc signed by default, and never notarized. it's meant to be built on the machine that runs it.
 - nothing leaves your mac. there's no network code in it.
 
 ## license

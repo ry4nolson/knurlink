@@ -62,18 +62,38 @@ public enum DomainMatcher {
         return normalizedHost == normalizedPattern || normalizedHost.hasSuffix("." + normalizedPattern)
     }
 
-    public static func rule(for url: URL, source: String? = nil, in rules: [Rule]) -> Rule? {
+    public static func rankedRules(for url: URL, source: String? = nil, in rules: [Rule]) -> [Rule] {
         rules
-            .compactMap { rule -> (rule: Rule, specificity: [Int])? in
+            .enumerated()
+            .compactMap { offset, rule -> (rule: Rule, specificity: [Int], offset: Int)? in
                 let pattern = RulePattern(rule.pattern)
                 let requiredSource = rule.sourceBundleID.flatMap { $0.isEmpty ? nil : $0 }
                 guard !pattern.isEmpty || requiredSource != nil else { return nil }
                 guard pattern.isEmpty || pattern.matches(url) else { return nil }
                 guard requiredSource == nil || requiredSource == source else { return nil }
-                return (rule, [pattern.host.count, pattern.pathSegments.count, requiredSource == nil ? 0 : 1])
+                return (rule, [pattern.host.count, pattern.pathSegments.count, requiredSource == nil ? 0 : 1], offset)
             }
-            .max { $0.specificity.lexicographicallyPrecedes($1.specificity) }?
-            .rule
+            .sorted {
+                $0.specificity == $1.specificity
+                    ? $0.offset < $1.offset
+                    : $1.specificity.lexicographicallyPrecedes($0.specificity)
+            }
+            .map(\.rule)
+    }
+
+    public static func rule(for url: URL, source: String? = nil, in rules: [Rule]) -> Rule? {
+        rankedRules(for: url, source: source, in: rules).first
+    }
+
+    public static func webURL(from input: String) -> URL? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !trimmed.contains(where: \.isWhitespace) else { return nil }
+        let candidate = trimmed.contains("://") ? trimmed : "https://" + trimmed
+        guard let url = URL(string: candidate),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+              url.host?.isEmpty == false
+        else { return nil }
+        return url
     }
 
     public static func suggestedDomain(forHost host: String) -> String {

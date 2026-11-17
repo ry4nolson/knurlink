@@ -27,7 +27,12 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$ROOT/.build/release/Knurlink" "$APP/Contents/MacOS/Knurlink"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
-codesign --force --sign - "$APP"
+if [ -n "${KNURLINK_SIGN_IDENTITY:-}" ]; then
+    codesign --force --options runtime --timestamp --sign "$KNURLINK_SIGN_IDENTITY" "$APP"
+    echo "Signed with $KNURLINK_SIGN_IDENTITY"
+else
+    codesign --force --sign - "$APP"
+fi
 echo "Built $APP"
 
 if [ "${1:-}" = "--install" ]; then

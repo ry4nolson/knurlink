@@ -5,9 +5,9 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 ## 1. shore up what's there
 
 - [ ] confirm launch at login survives a real logout, and that it starts quietly (no settings window).
-- [ ] sign with a Developer ID. the ad-hoc signature changes on every rebuild, which is the likely cause of the default browser or login item needing re-approval.
-- [ ] a "test a url" field in settings. paste a link, see which rule wins and why.
-- [ ] github actions running `swift test` on push.
+- [x] sign with a Developer ID. set `KNURLINK_SIGN_IDENTITY` and the build script uses it, with the hardened runtime on. without it the build is ad-hoc.
+- [x] a "test a url" field in settings. paste a link, see which rule wins and why.
+- [x] github actions running `swift test` on push.
 
 ## 2. fewer picker popups
 
@@ -32,6 +32,7 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 - [ ] notarized release builds and a homebrew cask.
 - [ ] auto-update.
 - [ ] a screenshot in the README, with fake profile names.
+- [ ] an about page, with a "sponsored by texas beard co" line.
 
 ## not doing
 
