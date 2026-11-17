@@ -203,7 +203,7 @@ h1 { font-size: clamp(38px, 6vw, 64px); font-weight: 800; letter-spacing: -0.035
 .msg { display: flex; gap: 11px; align-items: flex-start; }
 .avatar { flex: none; width: 34px; height: 34px; border-radius: 8px; background: var(--c); color: #fff; font-weight: 700; display: grid; place-items: center; text-transform: uppercase; font-size: 15px; }
 .who { font-weight: 700; font-size: 14px; }
-.msg p { margin: 1px 0 0; font-size: 14.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.msg p { margin: 1px 0 0; font-size: 14.5px; line-height: 1.45; overflow-wrap: break-word; }
 .demo-link { font-weight: 500; }
 .demo-hint { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 13px; color: var(--muted); }
 

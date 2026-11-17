@@ -1,6 +1,6 @@
 (function () {
   const M = window.Matcher;
-  const PR_URL = "https://github.com/ry4nolson/knurlink/pulls";
+  const PR_URL = "https://github.com/ry4nolson/knurlink/pull/1";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const browsers = [
@@ -89,7 +89,8 @@
           el("p", {}, m.text.map((part) =>
             typeof part === "string"
               ? part
-              : el("a", { href: part.url, class: "demo-link", "data-url": part.url }, pretty(part.url))
+              : el("a", { href: part.url, class: "demo-link", "data-url": part.url },
+                  pretty(part.url).split("/").flatMap((s, i) => (i ? ["/", el("wbr"), s] : [s])))
           ))
         )
       )
