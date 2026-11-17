@@ -9,50 +9,54 @@ struct AboutView: View {
     @ObservedObject var updater: UpdateChecker
 
     var body: some View {
-        VStack(spacing: 14) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 84, height: 84)
-            VStack(spacing: 2) {
-                Text("knURLink")
-                    .font(.title2.weight(.semibold))
-                Text("Version \(updater.currentVersion)")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Text("Decides which browser a link opens in.")
-                .foregroundStyle(.secondary)
-
-            Divider()
-
-            updateStatus
-            Toggle("Check for updates automatically", isOn: $model.config.checksForUpdates)
-                .toggleStyle(.checkbox)
-
-            Divider()
-
-            HStack(spacing: 16) {
-                Button("GitHub") { NSWorkspace.shared.open(Self.repository) }
-                Button("Releases") { NSWorkspace.shared.open(ReleaseInfo.releasesPage) }
-            }
-            .buttonStyle(.link)
-
-            VStack(spacing: 6) {
-                Text("Sponsored by")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button {
-                    NSWorkspace.shared.open(Self.sponsor)
-                } label: {
-                    SponsorLogoView()
+        Form {
+            Section {
+                VStack(spacing: 10) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                    VStack(spacing: 2) {
+                        Text("knURLink")
+                            .font(.title.weight(.semibold))
+                        Text("Version \(updater.currentVersion)")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    Text("Decides which browser a link opens in.")
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .help("texasbeardcompany.com")
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
-            .padding(.top, 4)
+
+            Section("Software Update") {
+                updateStatus
+                Toggle("Check for updates automatically", isOn: $model.config.checksForUpdates)
+            }
+
+            Section {
+                linkRow("GitHub Repository", symbol: "chevron.left.forwardslash.chevron.right", url: Self.repository)
+                linkRow("Release Notes", symbol: "doc.text", url: ReleaseInfo.releasesPage)
+            }
+
+            Section {
+                VStack(spacing: 8) {
+                    Text("Sponsored by")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        NSWorkspace.shared.open(Self.sponsor)
+                    } label: {
+                        SponsorLogoView()
+                    }
+                    .buttonStyle(.plain)
+                    .help("texasbeardcompany.com")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            }
         }
-        .padding(24)
-        .frame(width: 340)
         .task { await updater.check() }
     }
 
@@ -60,44 +64,75 @@ struct AboutView: View {
     private var updateStatus: some View {
         switch updater.state {
         case .idle, .checking:
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
+            HStack {
                 Text("Checking for updates…")
                     .foregroundStyle(.secondary)
+                Spacer()
+                ProgressView()
+                    .controlSize(.small)
             }
         case .upToDate:
-            HStack(spacing: 10) {
-                Label("You're up to date", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+            HStack {
+                statusLabel("knURLink is up to date", symbol: "checkmark.circle.fill", tint: .green)
+                Spacer()
                 checkButton
             }
         case let .available(release):
-            VStack(spacing: 8) {
-                Label("Version \(release.displayVersion) is available", systemImage: "arrow.down.circle.fill")
-                    .foregroundStyle(.orange)
+            HStack {
+                statusLabel("Version \(release.displayVersion) is available", symbol: "arrow.down.circle.fill", tint: .orange)
+                Spacer()
                 Button("Download") { NSWorkspace.shared.open(release.downloadURL) }
-                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
             }
         case let .failed(message):
-            VStack(spacing: 6) {
-                Label("Couldn't check for updates", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.secondary)
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    statusLabel("Couldn't check for updates", symbol: "exclamationmark.triangle.fill", tint: .orange)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
                 checkButton
             }
         }
     }
 
+    private func statusLabel(_ text: String, symbol: String, tint: Color) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: symbol)
+                .foregroundStyle(tint)
+        }
+    }
+
     private var checkButton: some View {
-        Button("Check Again") {
+        Button("Check Now") {
             Task { await updater.check() }
         }
-        .controlSize(.small)
+    }
+
+    private func linkRow(_ title: String, symbol: String, url: URL) -> some View {
+        Button {
+            NSWorkspace.shared.open(url)
+        } label: {
+            HStack {
+                Label {
+                    Text(title)
+                } icon: {
+                    Image(systemName: symbol)
+                        .frame(width: 20)
+                }
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

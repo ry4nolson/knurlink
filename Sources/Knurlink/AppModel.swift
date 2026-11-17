@@ -51,7 +51,9 @@ final class AppModel: ObservableObject {
     }
 
     var visibleOptions: [BrowserOption] {
-        BrowserCatalog.options(for: apps.filter(isVisible))
+        BrowserCatalog.options(for: apps.filter(isVisible)).filter { option in
+            option.profile.map { config.isProfileVisible($0.directory, in: option.app.bundleID) } ?? true
+        }
     }
 
     func refresh() {
@@ -92,6 +94,18 @@ final class AppModel: ObservableObject {
         config.appVisibility[app.bundleID] = visible
     }
 
+    func isVisible(_ profile: BrowserProfile, of app: BrowserApp) -> Bool {
+        config.isProfileVisible(profile.directory, in: app.bundleID)
+    }
+
+    func setVisible(_ visible: Bool, for profile: BrowserProfile, of app: BrowserApp) {
+        config.setProfile(profile.directory, in: app.bundleID, visible: visible)
+    }
+
+    func visibleProfileCount(of app: BrowserApp) -> Int {
+        app.profiles.filter { isVisible($0, of: app) }.count
+    }
+
     func resolve(_ target: BrowserTarget) -> BrowserOption? {
         guard let app = apps.first(where: { $0.bundleID == target.bundleID }) else { return nil }
         guard let directory = target.profileDirectory else { return BrowserOption(app: app, profile: nil) }
@@ -99,8 +113,11 @@ final class AppModel: ObservableObject {
         return BrowserOption(app: app, profile: profile)
     }
 
-    func routedOption(for url: URL, source: String?) -> BrowserOption? {
-        DomainMatcher.rule(for: url, source: source, in: config.rules).flatMap { resolve($0.target) }
+    func route(for url: URL, source: String?) -> (option: BrowserOption, privately: Bool)? {
+        guard let rule = DomainMatcher.rule(for: url, source: source, in: config.rules),
+              let option = resolve(rule.target)
+        else { return nil }
+        return (option, rule.opensPrivately)
     }
 
     func testOutcome(for input: String, source: String?) -> RuleTestOutcome? {
@@ -120,7 +137,7 @@ final class AppModel: ObservableObject {
         return "\(link) from \(name)"
     }
 
-    func setRule(domain: String, target: BrowserTarget) {
+    func setRule(domain: String, target: BrowserTarget, privately: Bool) {
         let normalized = RulePattern(domain).normalized
         guard !normalized.isEmpty else { return }
         let existing = config.rules.firstIndex {
@@ -128,8 +145,9 @@ final class AppModel: ObservableObject {
         }
         if let existing {
             config.rules[existing].target = target
+            config.rules[existing].opensPrivately = privately
         } else {
-            config.rules.append(Rule(pattern: normalized, target: target))
+            config.rules.append(Rule(pattern: normalized, target: target, opensPrivately: privately))
         }
     }
 

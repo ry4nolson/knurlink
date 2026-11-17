@@ -4,6 +4,7 @@ import SwiftUI
 struct PickerResult {
     let option: BrowserOption
     let rememberedDomain: String?
+    let privately: Bool
 }
 
 final class PickerState: ObservableObject {
@@ -12,6 +13,7 @@ final class PickerState: ObservableObject {
     let suggestedDomain: String?
     @Published var selection = 0
     @Published var remember = false
+    @Published var wantsPrivate = NSEvent.modifierFlags.contains(.shift)
 
     init(url: URL, options: [BrowserOption], suggestedDomain: String?) {
         self.url = url
@@ -62,7 +64,12 @@ struct PickerView: View {
                     of: count,
                     radius: expanded ? PickerLayout.radius(for: count) : 0
                 )
-                PickerBubble(option: option, index: index, isSelected: index == state.selection)
+                PickerBubble(
+                    option: option,
+                    index: index,
+                    isSelected: index == state.selection,
+                    wantsPrivate: state.wantsPrivate
+                )
                     .offset(offset)
                     .opacity(expanded ? 1 : 0)
                     .onTapGesture { choose(index) }
@@ -84,6 +91,24 @@ struct PickerView: View {
         }
     }
 
+    @ViewBuilder
+    private var selectionCaption: some View {
+        let option = state.options[state.selection]
+        if state.wantsPrivate, option.supportsPrivateWindow {
+            Label("\(option.title), private", systemImage: "eyeglasses")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(Color.accentColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        } else {
+            Text(option.title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+    }
+
     private var hub: some View {
         let diameter = PickerLayout.hubDiameter(for: count)
         return VStack(spacing: 6) {
@@ -91,11 +116,7 @@ struct PickerView: View {
                 .font(.headline)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(state.options[state.selection].title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            selectionCaption
             if let domain = state.suggestedDomain {
                 Toggle("Always for \(domain)", isOn: $state.remember)
                     .toggleStyle(.checkbox)
@@ -126,6 +147,9 @@ private struct PickerBubble: View {
     let option: BrowserOption
     let index: Int
     let isSelected: Bool
+    let wantsPrivate: Bool
+
+    private var showsPrivate: Bool { wantsPrivate && option.supportsPrivateWindow }
 
     var body: some View {
         VStack(spacing: 2) {
@@ -160,11 +184,22 @@ private struct PickerBubble: View {
                     .offset(x: -4, y: 4)
             }
         }
+        .overlay(alignment: .bottom) {
+            if showsPrivate {
+                Image(systemName: "eyeglasses")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 14)
+                    .background(Capsule().fill(Color.accentColor))
+                    .offset(y: 5)
+            }
+        }
+        .opacity(wantsPrivate && !option.supportsPrivateWindow ? 0.4 : 1)
         .scaleEffect(isSelected ? 1.1 : 1)
         .animation(.easeOut(duration: 0.12), value: isSelected)
         .contentShape(Circle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(option.title)
+        .accessibilityLabel(showsPrivate ? "\(option.title), private window" : option.title)
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -188,6 +223,7 @@ final class PickerController {
     private let completion: (PickerResult?) -> Void
     private var panel: PickerPanel?
     private var keyMonitor: Any?
+    private var flagsMonitor: Any?
     private var resignObserver: NSObjectProtocol?
 
     init(url: URL, options: [BrowserOption], suggestedDomain: String?, completion: @escaping (PickerResult?) -> Void) {
@@ -222,6 +258,11 @@ final class PickerController {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === self.panel else { return event }
             return self.handle(event) ? nil : event
+        }
+
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.state.wantsPrivate = event.modifierFlags.contains(.shift)
+            return event
         }
 
         NSApp.activate(ignoringOtherApps: true)
@@ -263,7 +304,7 @@ final class PickerController {
             state.selection = max(state.selection - 1, 0)
         default:
             guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
-                  let characters = event.charactersIgnoringModifiers?.lowercased()
+                  let characters = event.characters(byApplyingModifiers: [])?.lowercased()
             else { return false }
             if characters == "a", state.suggestedDomain != nil {
                 state.remember.toggle()
@@ -281,6 +322,10 @@ final class PickerController {
             NSEvent.removeMonitor(keyMonitor)
         }
         keyMonitor = nil
+        if let flagsMonitor {
+            NSEvent.removeMonitor(flagsMonitor)
+        }
+        flagsMonitor = nil
         if let resignObserver {
             NotificationCenter.default.removeObserver(resignObserver)
         }
@@ -292,9 +337,11 @@ final class PickerController {
             completion(nil)
             return
         }
+        let option = state.options[index]
         completion(PickerResult(
-            option: state.options[index],
-            rememberedDomain: state.remember ? state.suggestedDomain : nil
+            option: option,
+            rememberedDomain: state.remember ? state.suggestedDomain : nil,
+            privately: NSEvent.modifierFlags.contains(.shift) && option.supportsPrivateWindow
         ))
     }
 }

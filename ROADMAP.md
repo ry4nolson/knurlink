@@ -12,7 +12,8 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 ## 2. fewer picker popups
 
 - [ ] a default destination plus a hold-key. unmatched links go to one browser or profile silently, and holding a modifier brings up the bubbles.
-- [ ] hide and reorder individual profiles, not just whole apps.
+- [x] hide individual profiles, not just whole apps.
+- [ ] reorder bubbles.
 - [ ] "last used" as a quick pick.
 
 ## 3. smarter matching
@@ -24,7 +25,7 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 ## 4. more destinations
 
 - [ ] open in the desktop app and skip the browser (zoom, figma, linear, spotify).
-- [ ] private window on shift.
+- [x] private window on shift, and per rule.
 - [ ] Firefox profiles.
 
 ## 5. if other people use it

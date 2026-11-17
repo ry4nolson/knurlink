@@ -5,6 +5,7 @@ import os
 struct BrowserProfile: Hashable {
     let directory: String
     let name: String
+    let pictureURL: URL?
 }
 
 struct BrowserApp: Identifiable {
@@ -31,6 +32,10 @@ struct BrowserOption: Identifiable {
     var title: String {
         guard let profile else { return app.name }
         return "\(app.name) (\(profile.name))"
+    }
+
+    var supportsPrivateWindow: Bool {
+        PrivateWindow.argument(forBundleID: app.bundleID) != nil
     }
 }
 
@@ -101,17 +106,26 @@ enum BrowserCatalog {
 
     private static func chromiumProfiles(for bundleID: String) -> [BrowserProfile] {
         guard let dataDirectory = chromiumDataDirectories[bundleID] else { return [] }
-        let localState = FileManager.default
+        let root = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(dataDirectory)
-            .appendingPathComponent("Local State")
+        let localState = root.appendingPathComponent("Local State")
         guard FileManager.default.fileExists(atPath: localState.path) else { return [] }
         do {
-            let root = try JSONSerialization.jsonObject(with: Data(contentsOf: localState)) as? [String: Any]
-            let profile = root?["profile"] as? [String: Any]
+            let state = try JSONSerialization.jsonObject(with: Data(contentsOf: localState)) as? [String: Any]
+            let profile = state?["profile"] as? [String: Any]
             let infoCache = profile?["info_cache"] as? [String: [String: Any]] ?? [:]
             return infoCache
-                .map { BrowserProfile(directory: $0.key, name: $0.value["name"] as? String ?? $0.key) }
+                .map { directory, info in
+                    let picture = root
+                        .appendingPathComponent(directory)
+                        .appendingPathComponent("Google Profile Picture.png")
+                    return BrowserProfile(
+                        directory: directory,
+                        name: info["name"] as? String ?? directory,
+                        pictureURL: FileManager.default.fileExists(atPath: picture.path) ? picture : nil
+                    )
+                }
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
             logger.error("Could not read profiles for \(bundleID, privacy: .public): \(error.localizedDescription, privacy: .public)")

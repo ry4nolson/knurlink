@@ -7,28 +7,28 @@ struct RuleTesterView: View {
     @State private var source: String?
 
     var body: some View {
-        GroupBox("Test a link") {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    TextField("Paste a link to see where it would open", text: $input)
-                        .textFieldStyle(.roundedBorder)
-                    Text("from")
-                        .foregroundStyle(.secondary)
-                    Picker("", selection: $source) {
-                        Text("Any app").tag(String?.none)
-                        ForEach(model.sourceApps) { app in
-                            Text(app.name).tag(String?.some(app.bundleID))
-                        }
+        Form {
+            Section {
+                TextField("Link", text: $input, prompt: Text("Paste a link"))
+                Picker("From", selection: $source) {
+                    Text("Any app").tag(String?.none)
+                    Divider()
+                    ForEach(model.sourceApps) { app in
+                        Text(app.name).tag(String?.some(app.bundleID))
                     }
-                    .labelsHidden()
-                    .frame(width: 150)
                 }
+            } footer: {
+                SectionFooter("See which rule a link would hit without opening it.")
+            }
+
+            Section("Result") {
                 if let outcome = model.testOutcome(for: input, source: source) {
                     result(for: outcome)
+                } else {
+                    Text("Paste a link above to see where it would open.")
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(6)
         }
     }
 
@@ -36,25 +36,48 @@ struct RuleTesterView: View {
     private func result(for outcome: RuleTestOutcome) -> some View {
         switch outcome {
         case .invalid:
-            Label("That's not a web link.", systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.secondary)
+            status("That's not a web link.", symbol: "exclamationmark.triangle.fill", tint: .orange)
         case .noMatch:
-            Label("No rule matches. The picker opens.", systemImage: "circle.grid.cross")
-                .foregroundStyle(.secondary)
+            status("No rule matches. The picker opens.", symbol: "circle.grid.cross.fill", tint: .secondary)
         case let .missingTarget(winner):
-            Label("Matched \(model.describe(winner)), but its browser is missing. The picker opens.", systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
+            status("Its browser is missing. The picker opens.", symbol: "exclamationmark.triangle.fill", tint: .orange)
+            LabeledContent("Matched rule", value: model.describe(winner))
         case let .routed(option, winner, others):
-            Label("Opens in \(option.title)", systemImage: "arrow.right.circle.fill")
-                .foregroundStyle(.green)
-            Text("Matched rule: \(model.describe(winner))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            if !others.isEmpty {
-                Text("Also matched, but less specific: \(others.map(model.describe).joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            LabeledContent("Opens in") {
+                HStack(spacing: 6) {
+                    Image(nsImage: option.app.icon)
+                        .resizable()
+                        .frame(width: 18, height: 18)
+                    Text(option.title)
+                        .foregroundStyle(.primary)
+                }
             }
+            if winner.opensPrivately {
+                LabeledContent("Window") {
+                    if option.supportsPrivateWindow {
+                        Label("Private", systemImage: "eyeglasses")
+                    } else {
+                        Text("Normal. \(option.app.name) can't open private windows.")
+                    }
+                }
+            }
+            LabeledContent("Matched rule", value: model.describe(winner))
+            if !others.isEmpty {
+                LabeledContent("Also matched") {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        ForEach(others) { Text(model.describe($0)) }
+                    }
+                }
+            }
+        }
+    }
+
+    private func status(_ text: String, symbol: String, tint: some ShapeStyle) -> some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: symbol)
+                .foregroundStyle(tint)
         }
     }
 }

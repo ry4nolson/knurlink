@@ -176,10 +176,11 @@ final class ConfigStoreTests: XCTestCase {
         let store = ConfigStore(fileURL: directory.appendingPathComponent("nested/config.json"))
         let config = Config(
             rules: [
-                Rule(pattern: "tiktok.com", target: BrowserTarget(bundleID: "com.brave.Browser")),
+                Rule(pattern: "tiktok.com", target: BrowserTarget(bundleID: "com.brave.Browser"), opensPrivately: true),
                 Rule(sourceBundleID: "com.tinyspeck.slackmacgap", target: BrowserTarget(bundleID: "com.google.Chrome", profileDirectory: "Profile 1")),
             ],
-            appVisibility: ["com.googlecode.iterm2": false]
+            appVisibility: ["com.googlecode.iterm2": false],
+            hiddenProfiles: ["com.google.Chrome": ["Profile 3"]]
         )
         try store.save(config)
         XCTAssertEqual(try store.load(), config)
@@ -189,6 +190,35 @@ final class ConfigStoreTests: XCTestCase {
         let fileURL = directory.appendingPathComponent("config.json")
         try Data(#"{"rules":[]}"#.utf8).write(to: fileURL)
         XCTAssertEqual(try ConfigStore(fileURL: fileURL).load(), Config())
+    }
+
+    func testProfileVisibilityDefaultsToShownAndTogglesCleanly() {
+        var config = Config()
+        XCTAssertTrue(config.isProfileVisible("Default", in: "com.google.Chrome"))
+        config.setProfile("Profile 3", in: "com.google.Chrome", visible: false)
+        config.setProfile("Default", in: "com.google.Chrome", visible: false)
+        XCTAssertEqual(config.hiddenProfiles["com.google.Chrome"], ["Default", "Profile 3"])
+        XCTAssertFalse(config.isProfileVisible("Default", in: "com.google.Chrome"))
+        XCTAssertTrue(config.isProfileVisible("Default", in: "com.brave.Browser"))
+        config.setProfile("Default", in: "com.google.Chrome", visible: true)
+        config.setProfile("Profile 3", in: "com.google.Chrome", visible: true)
+        XCTAssertEqual(config, Config())
+    }
+
+    func testPrivateWindowArguments() {
+        XCTAssertEqual(PrivateWindow.argument(forBundleID: "com.google.Chrome"), "--incognito")
+        XCTAssertEqual(PrivateWindow.argument(forBundleID: "com.brave.Browser"), "--incognito")
+        XCTAssertEqual(PrivateWindow.argument(forBundleID: "com.microsoft.edgemac"), "--inprivate")
+        XCTAssertEqual(PrivateWindow.argument(forBundleID: "org.mozilla.firefox"), "-private-window")
+        XCTAssertNil(PrivateWindow.argument(forBundleID: "com.apple.Safari"))
+    }
+
+    func testRulesWithoutPrivateFlagDecodeAsNormal() throws {
+        let json = #"{"id":"CEF940D4-7519-454F-B1D7-E582AE330D43","pattern":"tiktok.com","target":{"bundleID":"com.brave.Browser"}}"#
+        let rule = try JSONDecoder().decode(Rule.self, from: Data(json.utf8))
+        XCTAssertFalse(rule.opensPrivately)
+        let encoded = try XCTUnwrap(String(data: JSONEncoder().encode(rule), encoding: .utf8))
+        XCTAssertFalse(encoded.contains("opensPrivately"))
     }
 
     func testDecodesLegacyDomainKey() throws {

@@ -15,8 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model = AppModel()
     private var statusItem: NSStatusItem?
     private let updater = UpdateChecker()
+    private let router = SettingsRouter()
     private var settingsWindow: NSWindow?
-    private var aboutWindow: NSWindow?
+    private var expectsActivation = false
+    private var settingsParkedBelow: Int?
+    private var settingsIsParked = false
     private var updateMenuItem: NSMenuItem?
     private var updateObserver: AnyCancellable?
     private var updateTimer: Timer?
@@ -78,10 +81,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return false
     }
 
+    func applicationWillBecomeActive(_ notification: Notification) {
+        defer { expectsActivation = false }
+        guard !expectsActivation,
+              let window = settingsWindow,
+              window.isVisible,
+              !isClickingInside(window)
+        else { return }
+        settingsParkedBelow = windowNumber(inFrontOf: window)
+        settingsIsParked = true
+        window.orderOut(nil)
+    }
+
+    func applicationDidResignActive(_ notification: Notification) {
+        guard settingsIsParked, let window = settingsWindow else { return }
+        settingsIsParked = false
+        if let above = settingsParkedBelow {
+            window.order(.below, relativeTo: above)
+        } else {
+            window.orderFront(nil)
+        }
+    }
+
+    private func isClickingInside(_ window: NSWindow) -> Bool {
+        NSEvent.pressedMouseButtons != 0 && window.frame.contains(NSEvent.mouseLocation)
+    }
+
+    private func windowNumber(inFrontOf window: NSWindow) -> Int? {
+        let options: CGWindowListOption = [.optionOnScreenAboveWindow, .excludeDesktopElements]
+        guard let windows = CGWindowListCopyWindowInfo(options, CGWindowID(window.windowNumber)) as? [[String: Any]] else { return nil }
+        return windows
+            .last { ($0[kCGWindowLayer as String] as? Int) == 0 }
+            .flatMap { $0[kCGWindowNumber as String] as? Int }
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         if window === settingsWindow { settingsWindow = nil }
-        if window === aboutWindow { aboutWindow = nil }
     }
 
     private func processNextURL() {
@@ -90,8 +126,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let url = link.url
         model.refresh()
 
-        if let option = model.routedOption(for: url, source: link.source) {
-            Launcher.open(url, with: option)
+        if let route = model.route(for: url, source: link.source) {
+            Launcher.open(url, with: route.option, privately: route.privately)
             processNextURL()
             return
         }
@@ -110,11 +146,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ) { [weak self] result in
             guard let self else { return }
             self.picker = nil
+            if result == nil, self.pendingLinks.isEmpty {
+                NSApp.deactivate()
+            }
             if let result {
                 if let domain = result.rememberedDomain {
-                    self.model.setRule(domain: domain, target: result.option.target)
+                    self.model.setRule(domain: domain, target: result.option.target, privately: result.privately)
                 }
-                Launcher.open(url, with: result.option)
+                Launcher.open(url, with: result.option, privately: result.privately)
             }
             self.processNextURL()
         }
@@ -188,30 +227,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func showAbout() {
-        if aboutWindow == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: AboutView(model: model, updater: updater)))
-            window.title = "About knURLink"
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
-            window.delegate = self
-            window.center()
-            aboutWindow = window
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        aboutWindow?.makeKeyAndOrderFront(nil)
+        router.section = .about
+        showSettings()
     }
 
     @objc private func showSettings() {
         if settingsWindow == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: model)))
-            window.title = "knURLink"
-            window.styleMask = [.titled, .closable, .miniaturizable]
+            let hosting = NSHostingController(rootView: SettingsView(model: model, updater: updater, router: router))
+            hosting.sceneBridgingOptions = [.toolbars, .title]
+            let window = NSWindow(contentViewController: hosting)
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            window.toolbarStyle = .unified
             window.isReleasedWhenClosed = false
             window.delegate = self
+            window.setContentSize(NSSize(width: 1000, height: 640))
             window.center()
+            window.setFrameAutosaveName("Settings")
             settingsWindow = window
         }
         model.refresh()
+        settingsIsParked = false
+        expectsActivation = !NSApp.isActive
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }

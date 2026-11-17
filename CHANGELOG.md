@@ -15,3 +15,13 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Launch at login
 - About window with an update check against GitHub releases
 - Developer ID signed and notarized release builds
+- Show or hide individual Chromium profiles in the picker
+- Private windows: hold Shift in the picker, or turn on Private for a rule (Chromium browsers, Edge, and Firefox)
+
+### Changed
+- Settings window redesigned with a sidebar, split into General, Rules, Test a Link, Browsers, and About sections
+- About moved from its own window into the settings sidebar
+
+### Fixed
+- Clicking a link no longer brings an open settings window to the front for a moment
+- Cancelling the picker hands focus back to the app the link came from

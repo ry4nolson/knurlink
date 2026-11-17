@@ -10,14 +10,15 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 
 ## what it does
 
-- **picker.** one bubble per browser, and one per profile for Chromium browsers. click one, or press 1-9. arrows and return work too. esc or clicking away cancels.
+- **picker.** one bubble per browser, and one per profile for Chromium browsers. turn off the browsers and profiles you don't use under Browsers in settings. click one, or press 1-9. arrows and return work too. esc or clicking away cancels.
 - **domain rules.** `tiktok.com` covers `www.tiktok.com`, `vm.tiktok.com`, and so on.
 - **path rules.** `github.com/my-org` matches that path and everything under it, on whole path segments.
 - **source app rules.** leave the link blank and pick an app to route everything that app sends. or fill in both to scope a domain to one app.
+- **private windows.** hold shift while you pick a bubble, or turn on Private for a rule, and the link opens in an incognito or private window. works for Chrome, Brave, Vivaldi, Chromium, Edge, and Firefox. Safari doesn't let other apps open private windows, so it opens a normal one.
 - **"always" checkbox.** tick it in the picker (or press A) to save a domain rule on the spot.
 - **test a link.** paste a link in settings to see which rule wins, and which other rules matched but lost.
 - **launch at login.** a toggle in settings, off by default. it starts quietly in the menu bar.
-- **update check.** the about window (menu bar icon, then About knURLink) tells you when there's a new release. it never installs anything on its own.
+- **update check.** the About section in settings (menu bar icon, then About knURLink) tells you when there's a new release. it never installs anything on its own.
 
 when more than one rule matches, the most specific link wins: longer domain first, then longer path. a rule with no link is the fallback.
 
@@ -59,7 +60,7 @@ swift test
 - profiles are only detected for Chromium browsers: Chrome, Brave, Edge, Vivaldi, Chromium. Firefox and Safari show up as one bubble each.
 - source app rules depend on macOS reporting who sent the link. links opened with `open` from a terminal come through with no sender.
 - local builds are ad-hoc signed unless you name an identity. only tagged releases are notarized.
-- your links and rules never leave your mac. the one network call is the update check, a single request to GitHub's releases API. turn it off in the about window if you'd rather it didn't.
+- your links and rules never leave your mac. the one network call is the update check, a single request to GitHub's releases API. turn it off in the About section of settings if you'd rather it didn't.
 
 ## releasing
 
