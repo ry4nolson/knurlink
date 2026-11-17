@@ -30,7 +30,7 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 
 ## 5. if other people use it
 
-- [ ] notarized release builds. the workflow versions and publishes on every push to `main` that touches the app. it hasn't run yet.
+- [ ] notarized release builds. `scripts/release.sh` versions, signs, notarizes, and publishes from your mac. it hasn't run for real yet.
 - [ ] a homebrew cask. it needs a first release to point at, and a tap repo.
 - [x] update check. the about window and the menu bar item say when a new release is out, and link to the download. it doesn't install anything itself.
 - [ ] a screenshot in the README, with fake profile names.

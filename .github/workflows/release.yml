@@ -1,14 +1,6 @@
 name: release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'Sources/**'
-      - 'Resources/**'
-      - 'Package.swift'
-      - 'scripts/build-app.sh'
-      - 'scripts/create-dmg.sh'
   workflow_dispatch:
 
 permissions:

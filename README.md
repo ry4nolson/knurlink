@@ -64,14 +64,32 @@ swift test
 
 ## releasing
 
-there's nothing to tag by hand. every push to `main` that touches the app (`Sources`, `Resources`, `Package.swift`, or the build scripts) cuts a release.
+releases are cut from your mac with one command, so they don't wait on GitHub's macOS runners.
 
 - add a line under `## [Unreleased]` in `CHANGELOG.md` with your change.
 - an entry under `### Added` bumps the minor version. anything else bumps the patch.
 - for a bigger jump, set `CFBundleShortVersionString` in `Resources/Info.plist` to the version you want. a higher number there wins.
 - with nothing under Unreleased, the release notes list the commits instead.
 
-the [release workflow](.github/workflows/release.yml) works out the version, stamps the changelog, runs the tests, signs, notarizes, publishes a dmg and a zip, and commits the version back to `main` as `Release vX.Y.Z`. it needs four repo secrets, and stops if the cert is missing instead of publishing an unsigned build:
+once, save your notarization credentials to the keychain. it asks for your Apple ID, team ID, and an [app-specific password](https://support.apple.com/102654):
+
+```bash
+xcrun notarytool store-credentials knurlink
+```
+
+then, from a clean, pushed `main`:
+
+```bash
+./scripts/release.sh
+```
+
+it works out the version, stamps the changelog, runs the tests, signs with the Developer ID in your keychain, notarizes, commits the version back to `main` as `Release vX.Y.Z`, pushes, and publishes a GitHub release with a dmg and a zip. if anything fails before the commit, `Info.plist` and `CHANGELOG.md` are put back.
+
+- `./scripts/release.sh --dry-run` builds and signs without notarizing or publishing anything.
+- with more than one Developer ID in your keychain, pick one with `KNURLINK_SIGN_IDENTITY`.
+- to use a different notarization profile name, set `KNURLINK_NOTARY_PROFILE`.
+
+the [release workflow](.github/workflows/release.yml) still exists as a manual fallback (Actions, then release, then Run workflow). it needs four repo secrets, and stops if the cert is missing instead of publishing an unsigned build:
 
 | secret | what it is |
 |--------|------------|
