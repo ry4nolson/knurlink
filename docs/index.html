@@ -10,6 +10,12 @@
 <meta property="og:image" content="assets/icon.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/icon.png">
+<script>
+  try {
+    const theme = localStorage.getItem("theme");
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+  } catch {}
+</script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -28,7 +34,13 @@
       <a href="#safari">safari</a>
       <a href="#install">install</a>
     </nav>
-    <a class="btn btn-small" href="https://github.com/ry4nolson/knurlink">GitHub</a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode">
+        <svg class="icon-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.3M8 13.2v1.3M1.5 8h1.3M13.2 8h1.3M3.4 3.4l.9.9M11.7 11.7l.9.9M3.4 12.6l.9-.9M11.7 4.3l.9-.9"/></svg>
+      </button>
+      <a class="btn btn-small" href="https://github.com/ry4nolson/knurlink">GitHub</a>
+    </div>
   </div>
 </header>
 
@@ -362,10 +374,8 @@ cd knurlink
     </div>
     <div class="sponsor">
       <span>sponsored by</span>
-      <picture>
-        <source srcset="assets/texas-beard-co-white.png" media="(prefers-color-scheme: dark)">
-        <img src="assets/texas-beard-co.png" alt="Texas Beard Company" width="180" height="37">
-      </picture>
+      <img class="logo-light" src="assets/texas-beard-co.png" alt="Texas Beard Company" width="180" height="37">
+      <img class="logo-dark" src="assets/texas-beard-co-white.png" alt="Texas Beard Company" width="180" height="37">
     </div>
     <nav class="footer-links" aria-label="Project">
       <a href="https://github.com/ry4nolson/knurlink">GitHub</a>
