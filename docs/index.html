@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>knURLink</title>
+<meta name="description" content="A small macOS menu bar app that decides which browser a link opens in. Rules for domains, paths, and apps, or a ring of bubbles at your cursor.">
+<meta property="og:title" content="knURLink">
+<meta property="og:description" content="Every link, in the browser it belongs in. A small macOS menu bar app.">
+<meta property="og:image" content="assets/icon.png">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top">
+      <img src="assets/icon.png" alt="" width="28" height="28">
+      <span>knURLink</span>
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#picker">picker</a>
+      <a href="#rules">rules</a>
+      <a href="#tester">test a link</a>
+      <a href="#private">private</a>
+      <a href="#safari">safari</a>
+      <a href="#install">install</a>
+    </nav>
+    <a class="btn btn-small" href="https://github.com/ry4nolson/knurlink">GitHub</a>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="knurl" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">macOS menu bar app · free · MIT</p>
+      <h1>every link, in the browser it belongs in.</h1>
+      <p class="lede">knURLink sits in as your default browser. click a link anywhere and it either goes straight where a rule says, or pops a ring of bubbles at your cursor so you can pick.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/ry4nolson/knurlink/releases/latest">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 1.5v9m0 0L4.5 7M8 10.5 11.5 7M2.5 13.5h11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download for Mac
+        </a>
+        <a class="btn" href="https://github.com/ry4nolson/knurlink">View the source</a>
+      </div>
+      <p class="meta">macOS 14 or later · signed and notarized · v1.0.0</p>
+      <p class="story">built because a coworker keeps posting tiktok links in Slack, and they kept opening in a work Chrome profile. now they go to Brave.</p>
+    </div>
+
+    <div class="demo">
+      <div class="window" id="stage">
+        <div class="window-bar">
+          <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="window-title">#random · Slack</span>
+        </div>
+        <ul class="chat" id="chat"></ul>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="demo-hint">
+        <span>click a link. press <kbd>1</kbd>–<kbd>9</kbd>, <kbd>A</kbd> for always, <kbd>esc</kbd> to cancel.</span>
+        <button class="chip" id="privChip" type="button" aria-pressed="false">
+          <svg class="specs" viewBox="0 0 24 12" aria-hidden="true"><circle cx="6" cy="7" r="4"/><circle cx="18" cy="7" r="4"/><path d="M10 6.5q2-2 4 0"/></svg>
+          hold <kbd>shift</kbd> for private
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <h2>how it decides</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>you click a link</h3>
+        <p>in Slack, Mail, a terminal, wherever. macOS hands it to knURLink because it's your default browser.</p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>rules get first dibs</h3>
+        <p>if a rule matches, the link goes straight to that browser or profile. no popup, no decision.</p>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>otherwise, bubbles</h3>
+        <p>nothing matched, so a ring of bubbles opens at your cursor. pick one. tick "always" and you won't be asked again.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="picker">
+  <div class="wrap split">
+    <div>
+      <h2>the picker</h2>
+      <p class="section-lede">one bubble per browser, and one per profile for Chromium browsers and Safari. it opens wherever your cursor is and gets out of the way the moment you choose.</p>
+      <div class="cards two">
+        <div class="card">
+          <h3>"always" checkbox</h3>
+          <p>tick it in the hub, or press <kbd>A</kbd>, and knURLink saves a domain rule on the spot. it saves the site, not the subdomain: <code>news.ycombinator.com</code> saves <code>ycombinator.com</code>, and <code>bbc.co.uk</code> keeps its <code>.co.uk</code>.</p>
+        </div>
+        <div class="card">
+          <h3>hide what you don't use</h3>
+          <p>Browsers in settings lists every browser and profile it found. turn off the ones you never pick. hiding only takes a bubble out of the picker. rules can still send links there.</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <table class="keys">
+        <caption>keyboard</caption>
+        <tbody>
+          <tr><td><kbd>1</kbd> … <kbd>9</kbd></td><td>open that bubble</td></tr>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>move the selection</td></tr>
+          <tr><td><kbd>return</kbd></td><td>open the selected bubble</td></tr>
+          <tr><td>hold <kbd>shift</kbd></td><td>open in a private window</td></tr>
+          <tr><td><kbd>A</kbd></td><td>toggle "always for this site"</td></tr>
+          <tr><td><kbd>esc</kbd> or click away</td><td>cancel. focus goes back to the app the link came from</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="rules">
+  <div class="wrap">
+    <h2>rules</h2>
+    <p class="section-lede">a rule is a link pattern, an optional app it came from, and where it opens. links that match skip the picker.</p>
+    <div class="cards four">
+      <div class="card rule-card">
+        <span class="tag">domain</span>
+        <code class="pattern">tiktok.com</code>
+        <ul class="match">
+          <li class="yes">tiktok.com</li>
+          <li class="yes">www.tiktok.com</li>
+          <li class="yes">tiktok.com/@rickastleyofficial</li>
+          <li class="no">nottiktok.com</li>
+        </ul>
+        <p>covers every subdomain. <code>*.tiktok.com</code> works too, if that's how your brain types it.</p>
+      </div>
+      <div class="card rule-card">
+        <span class="tag">path</span>
+        <code class="pattern">github.com/ry4nolson</code>
+        <ul class="match">
+          <li class="yes">github.com/ry4nolson</li>
+          <li class="yes">github.com/ry4nolson/knurlink</li>
+          <li class="no">github.com/ry4nolson-fork</li>
+          <li class="no">github.com/apple/swift</li>
+        </ul>
+        <p>matches that path and everything under it, on whole path segments.</p>
+      </div>
+      <div class="card rule-card">
+        <span class="tag">source app</span>
+        <code class="pattern"><span class="dim">any link</span> from Mail</code>
+        <ul class="match">
+          <li class="yes">anything you click in Mail</li>
+          <li class="no">the same link from Slack</li>
+        </ul>
+        <p>leave the link blank and pick an app to route everything it sends. fill in both to scope a domain to one app.</p>
+      </div>
+      <div class="card rule-card">
+        <span class="tag">private</span>
+        <code class="pattern">youtube.com <span class="dim">· private</span></code>
+        <ul class="match">
+          <li class="yes">opens in incognito or a private window</li>
+        </ul>
+        <p>turn on Private for a rule and its matches open privately, every time. see <a href="#private">which browsers</a> support it.</p>
+      </div>
+    </div>
+
+    <div class="specificity">
+      <h3>when more than one rule matches</h3>
+      <p>the most specific link wins. in order:</p>
+      <ol>
+        <li><strong>longer domain.</strong> <code>api.github.com</code> beats <code>github.com</code>.</li>
+        <li><strong>then longer path.</strong> <code>github.com/ry4nolson</code> beats <code>github.com</code>.</li>
+        <li><strong>then app-scoped.</strong> a rule for links from Slack beats the same rule for any app.</li>
+        <li><strong>still tied?</strong> the one higher in your list.</li>
+      </ol>
+      <p class="fine">a rule with no link has no domain length, so it's the fallback. matching ignores case, <code>https://</code>, <code>www.</code>, ports, query strings, and <code>#fragments</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tester">
+  <div class="wrap">
+    <h2>test a link</h2>
+    <p class="section-lede">settings has a Test a Link pane. this is that, running the same matching logic ported to the browser. paste a link, pick where it came from, and see which rule wins and which ones matched but lost. the rules underneath are editable, and the demo up top uses them too.</p>
+
+    <div class="tester">
+      <div class="tester-form">
+        <label class="field grow">
+          <span>Link</span>
+          <input id="tUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a link" value="">
+        </label>
+        <label class="field">
+          <span>From</span>
+          <select id="tSrc"></select>
+        </label>
+      </div>
+      <div class="examples" id="examples" aria-label="Example links"></div>
+      <div class="result" id="tResult" aria-live="polite"></div>
+    </div>
+
+    <div class="rules-editor">
+      <div class="rules-head">
+        <h3>rules</h3>
+        <div class="rules-actions">
+          <button class="btn btn-small" id="addRule" type="button">Add Rule</button>
+          <button class="btn btn-small btn-ghost" id="resetRules" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="rules-table" role="table" aria-label="Rules">
+        <div class="rules-row rules-cols" role="row">
+          <span role="columnheader">Link</span>
+          <span role="columnheader">From</span>
+          <span role="columnheader">Opens In</span>
+          <span role="columnheader">Private</span>
+          <span role="columnheader"><span class="sr">Delete</span></span>
+        </div>
+        <div id="rulesBody"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="private">
+  <div class="wrap split">
+    <div>
+      <h2>private windows</h2>
+      <p class="section-lede">hold <kbd>shift</kbd> while you pick a bubble, or turn on Private for a rule. bubbles for browsers that can't do it fade out while shift is down, so you know before you click.</p>
+      <p class="fine">beta, dev, canary, and nightly channels count too.</p>
+    </div>
+    <table class="matrix">
+      <thead><tr><th>browser</th><th>opens</th></tr></thead>
+      <tbody>
+        <tr><td>Chrome, Brave, Vivaldi, Chromium</td><td><span class="ok">incognito</span></td></tr>
+        <tr><td>Edge</td><td><span class="ok">InPrivate</span></td></tr>
+        <tr><td>Firefox</td><td><span class="ok">private window</span></td></tr>
+        <tr><td>Safari</td><td><span class="meh">a normal window.</span> Safari doesn't let other apps open private windows.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="safari">
+  <div class="wrap split">
+    <div>
+      <h2>safari profiles</h2>
+      <p class="section-lede">macOS has no way to launch a Safari profile. so knURLink does it the long way.</p>
+      <ol class="numbered">
+        <li>it uses the Accessibility API to pick the profile's "New Window" item from Safari's File menu.</li>
+        <li>it hands that new window the link.</li>
+        <li>if anything goes wrong, the link opens in plain Safari. you still get your page.</li>
+      </ol>
+      <p class="fine">it asks for Accessibility access under Browsers in settings. profile names are read from Safari's menu while it's running and remembered after that, so Safari needs to have run once with knURLink open. it reads the English menu titles, so other macOS languages won't find them yet.</p>
+    </div>
+    <div class="menu-mock" aria-hidden="true">
+      <div class="menu-bar"><span>Safari</span><span class="on">File</span><span>Edit</span><span>View</span></div>
+      <div class="menu">
+        <div class="mi">New Window<kbd>⌘N</kbd></div>
+        <div class="mi hit">New Work Window</div>
+        <div class="mi">New Personal Window</div>
+        <div class="mi">New Private Window<kbd>⇧⌘N</kbd></div>
+        <div class="sep"></div>
+        <div class="mi">New Tab<kbd>⌘T</kbd></div>
+        <div class="mi">Open File…<kbd>⌘O</kbd></div>
+      </div>
+      <div class="cursor-note">↑ knURLink, clicking it for you</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="more">
+  <div class="wrap">
+    <h2>the rest</h2>
+    <div class="cards three">
+      <div class="card">
+        <h3>make default</h3>
+        <p>open the app, click <strong>Make Default</strong>, and confirm the macOS prompt. after that it lives behind the menu bar icon.</p>
+      </div>
+      <div class="card">
+        <h3>launch at login</h3>
+        <p>a toggle in General, off by default. it starts quietly in the menu bar. no window in your face at 9am.</p>
+      </div>
+      <div class="card">
+        <h3>update check</h3>
+        <p>the About section tells you when there's a new release and links to the download. it never installs anything on its own. turn it off if you'd rather it didn't ask.</p>
+      </div>
+      <div class="card">
+        <h3>nothing leaves your mac</h3>
+        <p>your links and rules stay local. the one network call is the update check, a single request to GitHub's releases API.</p>
+      </div>
+      <div class="card wide">
+        <h3>your rules are plain JSON</h3>
+        <p>saved to <code>~/Library/Application Support/Knurlink/config.json</code>. edit it by hand if you like. quit the app first, or it'll overwrite your edits. <code>id</code> is optional when you write rules yourself.</p>
+<pre><code>{
+  "rules": [
+    { "pattern": "tiktok.com",
+      "target": { "bundleID": "com.brave.Browser" } },
+    { "pattern": "github.com/my-org",
+      "target": { "bundleID": "com.google.Chrome",
+                  "profileDirectory": "Profile 1" } },
+    { "pattern": "", "sourceBundleID": "com.apple.mail",
+      "target": { "bundleID": "com.apple.Safari" },
+      "opensPrivately": true }
+  ],
+  "checksForUpdates": true
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="install">
+  <div class="wrap split">
+    <div>
+      <h2>install</h2>
+      <ol class="numbered">
+        <li>grab <code>knURLink.dmg</code> from the <a href="https://github.com/ry4nolson/knurlink/releases/latest">latest release</a>.</li>
+        <li>drag the app to Applications and open it.</li>
+        <li>click <strong>Make Default</strong>. macOS will ask you to confirm.</li>
+      </ol>
+      <p class="fine">release builds are signed and notarized. it needs macOS 14 or later.</p>
+      <a class="btn btn-primary" href="https://github.com/ry4nolson/knurlink/releases/latest">Download for Mac</a>
+    </div>
+    <div>
+      <h3>or build it yourself</h3>
+      <p class="fine">you need Xcode or the Swift toolchain, Swift 5.9 or newer.</p>
+<pre><code>git clone https://github.com/ry4nolson/knurlink
+cd knurlink
+./scripts/build-app.sh --install</code></pre>
+      <p class="fine">that builds a release binary, wraps it in <code>knURLink.app</code>, ad-hoc signs it, and copies it to <code>/Applications</code>. leave off <code>--install</code> to just get <code>dist/knURLink.app</code>. run the tests with <code>swift test</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="limits">
+  <div class="wrap">
+    <h2>limits</h2>
+    <ul class="limits">
+      <li>profiles are detected for Chromium browsers (Chrome, Brave, Edge, Vivaldi, Chromium) and Safari. Firefox shows up as one bubble.</li>
+      <li>source app rules depend on macOS reporting who sent the link. links opened with <code>open</code> from a terminal come through with no sender.</li>
+      <li>Safari profiles need Accessibility access and English menu titles.</li>
+      <li>local builds are ad-hoc signed unless you name an identity. only tagged releases are notarized.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="name-note">
+      <img src="assets/icon.png" alt="" width="40" height="40">
+      <p>the name is a knurl, the grip pattern you cut into a tool handle, with a url hiding in it.</p>
+    </div>
+    <div class="sponsor">
+      <span>sponsored by</span>
+      <picture>
+        <source srcset="assets/texas-beard-co-white.png" media="(prefers-color-scheme: dark)">
+        <img src="assets/texas-beard-co.png" alt="Texas Beard Company" width="180" height="37">
+      </picture>
+    </div>
+    <nav class="footer-links" aria-label="Project">
+      <a href="https://github.com/ry4nolson/knurlink">GitHub</a>
+      <a href="https://github.com/ry4nolson/knurlink/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/ry4nolson/knurlink/blob/main/ROADMAP.md">Roadmap</a>
+      <a href="https://github.com/ry4nolson/knurlink/blob/main/LICENSE">MIT License</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="matcher.js"></script>
+<script src="site.js"></script>
+</body>
+</html>
