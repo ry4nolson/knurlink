@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-17
+
 ### Added
 - Safari private windows, opened through Safari's File menu with the Accessibility API. If it can't, knURLink asks before opening the link in a normal window
 
