@@ -17,15 +17,17 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 - **"always" checkbox.** tick it in the picker (or press A) to save a domain rule on the spot.
 - **test a link.** paste a link in settings to see which rule wins, and which other rules matched but lost.
 - **launch at login.** a toggle in settings, off by default. it starts quietly in the menu bar.
+- **update check.** the about window (menu bar icon, then About knURLink) tells you when there's a new release. it never installs anything on its own.
 
 when more than one rule matches, the most specific link wins: longer domain first, then longer path. a rule with no link is the fallback.
 
-## requirements
+## install
 
-- macOS 14 or later
-- Xcode or the Swift toolchain (Swift 5.9+) to build it
+grab `knURLink.dmg` from the [latest release](https://github.com/ry4nolson/knurlink/releases/latest), drag the app to Applications, open it, and click **Make Default**. release builds are signed and notarized. it needs macOS 14 or later.
 
-## build and install
+## build it yourself
+
+you need Xcode or the Swift toolchain (Swift 5.9+).
 
 ```bash
 ./scripts/build-app.sh --install
@@ -56,8 +58,29 @@ swift test
 
 - profiles are only detected for Chromium browsers: Chrome, Brave, Edge, Vivaldi, Chromium. Firefox and Safari show up as one bubble each.
 - source app rules depend on macOS reporting who sent the link. links opened with `open` from a terminal come through with no sender.
-- the app is ad-hoc signed by default, and never notarized. it's meant to be built on the machine that runs it.
-- nothing leaves your mac. there's no network code in it.
+- local builds are ad-hoc signed unless you name an identity. only tagged releases are notarized.
+- your links and rules never leave your mac. the one network call is the update check, a single request to GitHub's releases API. turn it off in the about window if you'd rather it didn't.
+
+## releasing
+
+update `CHANGELOG.md` with a section for the version, then tag it:
+
+```bash
+git tag v1.0.0
+```
+
+```bash
+git push origin v1.0.0
+```
+
+the [release workflow](.github/workflows/release.yml) sets the version from the tag, runs the tests, signs, notarizes, and publishes a dmg and a zip. it needs four repo secrets, and stops if the cert is missing instead of publishing an unsigned build:
+
+| secret | what it is |
+|--------|------------|
+| `DEVELOPER_ID_P12` | base64 of the Developer ID Application `.p12` |
+| `DEVELOPER_ID_P12_PASSWORD` | password for that `.p12` |
+| `APPLE_ID` | Apple ID for `notarytool` |
+| `APPLE_ID_PASSWORD` | app-specific password |
 
 ## license
 

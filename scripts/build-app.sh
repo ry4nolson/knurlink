@@ -27,6 +27,8 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$ROOT/.build/release/Knurlink" "$APP/Contents/MacOS/Knurlink"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/Resources/TexasBeardCo/HorizontalLogo.png" "$APP/Contents/Resources/SponsorLogo.png"
+cp "$ROOT/Resources/TexasBeardCo/HorizontalLogoWhite.png" "$APP/Contents/Resources/SponsorLogoWhite.png"
 if [ -n "${KNURLINK_SIGN_IDENTITY:-}" ]; then
     codesign --force --options runtime --timestamp --sign "$KNURLINK_SIGN_IDENTITY" "$APP"
     echo "Signed with $KNURLINK_SIGN_IDENTITY"

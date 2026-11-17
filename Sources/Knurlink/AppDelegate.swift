@@ -1,5 +1,6 @@
 import AppKit
 import Carbon
+import Combine
 import KnurlinkCore
 import os
 import SwiftUI
@@ -13,7 +14,12 @@ private struct IncomingLink {
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model = AppModel()
     private var statusItem: NSStatusItem?
+    private let updater = UpdateChecker()
     private var settingsWindow: NSWindow?
+    private var aboutWindow: NSWindow?
+    private var updateMenuItem: NSMenuItem?
+    private var updateObserver: AnyCancellable?
+    private var updateTimer: Timer?
     private var picker: PickerController?
     private let logger = Logger(subsystem: "dev.knurlink.Knurlink", category: "routing")
     private var pendingLinks: [IncomingLink] = []
@@ -31,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
         installStatusItem()
+        scheduleUpdateChecks()
         let launchEvent = NSAppleEventManager.shared().currentAppleEvent
         let launchedAtLogin = launchEvent?.eventID == AEEventID(kAEOpenApplication)
             && launchEvent?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem)
@@ -72,7 +79,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        settingsWindow = nil
+        guard let window = notification.object as? NSWindow else { return }
+        if window === settingsWindow { settingsWindow = nil }
+        if window === aboutWindow { aboutWindow = nil }
     }
 
     private func processNextURL() {
@@ -140,11 +149,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: "knURLink")
         let menu = NSMenu()
+        let update = menu.addItem(withTitle: "", action: #selector(openUpdate), keyEquivalent: "")
+        update.target = self
+        update.isHidden = true
+        updateMenuItem = update
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
+        menu.addItem(withTitle: "About knURLink", action: #selector(showAbout), keyEquivalent: "").target = self
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit knURLink", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
         statusItem = item
+    }
+
+    private func scheduleUpdateChecks() {
+        updateObserver = updater.$state.sink { [weak self] state in
+            guard let item = self?.updateMenuItem else { return }
+            if case let .available(release) = state {
+                item.title = "Update to \(release.displayVersion)…"
+                item.isHidden = false
+            } else {
+                item.isHidden = true
+            }
+        }
+        checkForUpdatesIfEnabled()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 24 * 60 * 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkForUpdatesIfEnabled() }
+        }
+    }
+
+    private func checkForUpdatesIfEnabled() {
+        guard model.config.checksForUpdates else { return }
+        Task { await updater.check() }
+    }
+
+    @objc private func openUpdate() {
+        guard let release = updater.availableRelease else { return }
+        NSWorkspace.shared.open(release.downloadURL)
+    }
+
+    @objc private func showAbout() {
+        if aboutWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: AboutView(model: model, updater: updater)))
+            window.title = "About knURLink"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.delegate = self
+            window.center()
+            aboutWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        aboutWindow?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func showSettings() {

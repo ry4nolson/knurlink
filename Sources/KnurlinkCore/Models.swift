@@ -49,15 +49,18 @@ public struct Rule: Codable, Identifiable, Hashable, Sendable {
 public struct Config: Codable, Equatable, Sendable {
     public var rules: [Rule]
     public var appVisibility: [String: Bool]
+    public var checksForUpdates: Bool
 
-    public init(rules: [Rule] = [], appVisibility: [String: Bool] = [:]) {
+    public init(rules: [Rule] = [], appVisibility: [String: Bool] = [:], checksForUpdates: Bool = true) {
         self.rules = rules
         self.appVisibility = appVisibility
+        self.checksForUpdates = checksForUpdates
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         rules = try container.decodeIfPresent([Rule].self, forKey: .rules) ?? []
         appVisibility = try container.decodeIfPresent([String: Bool].self, forKey: .appVisibility) ?? [:]
+        checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
     }
 }
