@@ -35,7 +35,7 @@ struct BrowserOption: Identifiable {
     }
 
     var supportsPrivateWindow: Bool {
-        PrivateWindow.argument(forBundleID: app.bundleID) != nil
+        PrivateWindow.isSupported(bundleID: app.bundleID)
     }
 }
 

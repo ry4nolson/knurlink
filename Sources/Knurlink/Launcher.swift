@@ -12,7 +12,12 @@ enum Launcher {
             logger.error("Could not open \(option.title, privacy: .public): \(error.localizedDescription, privacy: .public)")
             DispatchQueue.main.async { presentFailure(error, option: option) }
         }
-        if let profile = option.profile, SafariProfileMenu.supportsProfiles(bundleID: option.app.bundleID) {
+        let isSafari = SafariProfileMenu.supportsProfiles(bundleID: option.app.bundleID)
+        if privately, isSafari {
+            openPrivatelyInSafari(url, option: option)
+            return
+        }
+        if let profile = option.profile, isSafari {
             openInSafari(url, profile: profile, option: option)
             return
         }
@@ -39,6 +44,35 @@ enum Launcher {
         SafariAutomation.open(url, inProfile: profile.name, app: option.app) { error in
             guard error != nil else { return }
             DispatchQueue.main.async { open(url, with: BrowserOption(app: option.app, profile: nil)) }
+        }
+    }
+
+    private static func openPrivatelyInSafari(_ url: URL, option: BrowserOption) {
+        guard SafariAutomation.isTrusted else {
+            offerNormalWindow(url, option: option, error: SafariAutomationError.notTrusted)
+            return
+        }
+        SafariAutomation.openPrivately(url, app: option.app) { error in
+            guard let error else { return }
+            DispatchQueue.main.async { offerNormalWindow(url, option: option, error: error) }
+        }
+    }
+
+    private static func offerNormalWindow(_ url: URL, option: BrowserOption, error: Error) {
+        let needsTrust = error as? SafariAutomationError == .notTrusted
+        let alert = NSAlert()
+        alert.messageText = "Could not open a private window in \(option.app.name)"
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open Normally")
+        if needsTrust { alert.addButton(withTitle: "Allow Access…") }
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            open(url, with: option)
+        } else if needsTrust, response == .alertSecondButtonReturn {
+            SafariAutomation.requestTrust()
         }
     }
 

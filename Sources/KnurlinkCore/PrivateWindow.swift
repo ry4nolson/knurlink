@@ -30,4 +30,8 @@ public enum PrivateWindow {
         if firefox.contains(bundleID) { return "-private-window" }
         return nil
     }
+
+    public static func isSupported(bundleID: String) -> Bool {
+        argument(forBundleID: bundleID) != nil || SafariProfileMenu.supportsProfiles(bundleID: bundleID)
+    }
 }
