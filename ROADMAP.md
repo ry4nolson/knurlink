@@ -27,6 +27,7 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 - [ ] open in the desktop app and skip the browser (zoom, figma, linear, spotify).
 - [x] private window on shift, and per rule.
 - [ ] Firefox profiles.
+- [x] Safari profiles, through the Accessibility API.
 
 ## 5. if other people use it
 
@@ -38,5 +39,4 @@ ordered by what would annoy first if it's missing, not by how fun it is to build
 
 ## not doing
 
-- Safari profiles. there's no real API for them.
 - global hotkeys to open a profile with no link. that's a different app.

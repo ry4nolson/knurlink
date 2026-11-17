@@ -17,6 +17,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Developer ID signed and notarized release builds
 - Show or hide individual Chromium profiles in the picker
 - Private windows: hold Shift in the picker, or turn on Private for a rule (Chromium browsers, Edge, and Firefox)
+- Safari profiles in the picker and in rules, opened through the Accessibility API
 
 ### Changed
 - Settings window redesigned with a sidebar, split into General, Rules, Test a Link, Browsers, and About sections

@@ -26,6 +26,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var launchesAtLogin = false
     @Published private(set) var loginItemNeedsApproval = false
     @Published private(set) var lastError: String?
+    @Published private(set) var hasAccessibilityAccess = SafariAutomation.isTrusted
+
+    private var accessibilityPoll: Timer?
 
     private let store: ConfigStore
 
@@ -57,6 +60,7 @@ final class AppModel: ObservableObject {
     }
 
     func refresh() {
+        hasAccessibilityAccess = SafariAutomation.isTrusted
         apps = BrowserCatalog.installedApps()
         sourceApps = SourceApp.candidates(including: config.rules.compactMap(\.sourceBundleID))
         let probe = URL(string: "https://example.com")!
@@ -78,6 +82,21 @@ final class AppModel: ObservableObject {
             lastError = "Could not change launch at login: \(error.localizedDescription)"
         }
         refreshLoginItem()
+    }
+
+    func requestAccessibilityAccess() {
+        SafariAutomation.requestTrust()
+        accessibilityPoll?.invalidate()
+        let deadline = Date().addingTimeInterval(180)
+        accessibilityPoll = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            Task { @MainActor in
+                guard let self else { return timer.invalidate() }
+                guard SafariAutomation.isTrusted || Date() > deadline else { return }
+                timer.invalidate()
+                self.accessibilityPoll = nil
+                self.refresh()
+            }
+        }
     }
 
     private func refreshLoginItem() {

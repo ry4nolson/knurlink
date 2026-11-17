@@ -85,7 +85,9 @@ enum BrowserCatalog {
                     name: displayName(for: url),
                     url: url,
                     icon: NSWorkspace.shared.icon(forFile: url.path),
-                    profiles: chromiumProfiles(for: bundleID),
+                    profiles: SafariProfileMenu.supportsProfiles(bundleID: bundleID)
+                        ? SafariAutomation.profiles(for: bundleID)
+                        : chromiumProfiles(for: bundleID),
                     isKnownBrowser: chromiumDataDirectories[bundleID] != nil || otherKnownBrowsers.contains(bundleID)
                 )
             }

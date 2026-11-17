@@ -438,6 +438,9 @@ struct BrowsersSettingsView: View {
             Section {
                 ForEach(model.apps) { app in
                     appRow(app)
+                    if SafariProfileMenu.supportsProfiles(bundleID: app.bundleID), model.isVisible(app) {
+                        SafariProfileAccessRow(model: model, app: app)
+                    }
                     if app.profiles.count > 1, model.isVisible(app) {
                         ForEach(app.profiles, id: \.directory) { profile in
                             profileRow(profile, of: app)
@@ -447,9 +450,48 @@ struct BrowsersSettingsView: View {
             } header: {
                 Text("Show in Picker")
             } footer: {
-                SectionFooter("Chromium browsers get one bubble per profile. Turn off the profiles you don't use. Hiding a browser or profile only takes it out of the picker. Rules can still send links to it.")
+                SectionFooter("Chromium browsers and Safari get one bubble per profile. Turn off the profiles you don't use. Hiding a browser or profile only takes it out of the picker. Rules can still send links to it.")
             }
         }
+    }
+}
+
+private struct SafariProfileAccessRow: View {
+    @ObservedObject var model: AppModel
+    let app: BrowserApp
+
+    private var isRunning: Bool {
+        !NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleID).isEmpty
+    }
+
+    var body: some View {
+        Group {
+            if !model.hasAccessibilityAccess {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("Safari profiles need Accessibility access", systemImage: "hand.raised.fill")
+                            .foregroundStyle(.orange)
+                        Text("macOS has no way to open a Safari profile directly, so knURLink opens a new window in the profile through Safari's File menu, then hands it the link.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                    Button("Allow…") { model.requestAccessibilityAccess() }
+                    Button("Open Settings…") { SafariAutomation.openAccessibilitySettings() }
+                        .buttonStyle(.link)
+                }
+            } else if app.profiles.isEmpty, !isRunning {
+                HStack {
+                    Text("Open \(app.name) once so knURLink can see its profiles.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Check Again") { model.refresh() }
+                }
+            }
+        }
+        .padding(.leading, 38)
     }
 }
 
