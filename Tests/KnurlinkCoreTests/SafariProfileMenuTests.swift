@@ -36,4 +36,17 @@ final class SafariProfileMenuTests: XCTestCase {
         XCTAssertTrue(SafariProfileMenu.supportsProfiles(bundleID: "com.apple.SafariTechnologyPreview"))
         XCTAssertFalse(SafariProfileMenu.supportsProfiles(bundleID: "com.google.Chrome"))
     }
+
+    func testFindsPrivateWindowItemByTitleOrShortcut() {
+        XCTAssertTrue(SafariProfileMenu.isPrivateWindowItem(title: "New Private Window", commandKey: nil, modifiers: nil))
+        XCTAssertTrue(SafariProfileMenu.isPrivateWindowItem(title: "Nouvelle fenêtre privée", commandKey: "N", modifiers: 1))
+        XCTAssertTrue(SafariProfileMenu.isPrivateWindowItem(title: nil, commandKey: "n", modifiers: 1))
+    }
+
+    func testIgnoresOtherNewWindowItems() {
+        XCTAssertFalse(SafariProfileMenu.isPrivateWindowItem(title: "New Window", commandKey: "N", modifiers: 0))
+        XCTAssertFalse(SafariProfileMenu.isPrivateWindowItem(title: "New Work Window", commandKey: nil, modifiers: nil))
+        XCTAssertFalse(SafariProfileMenu.isPrivateWindowItem(title: "New Tab", commandKey: "T", modifiers: 0))
+        XCTAssertFalse(SafariProfileMenu.isPrivateWindowItem(title: "Reopen Last Closed Tab", commandKey: "T", modifiers: 1))
+    }
 }

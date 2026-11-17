@@ -3,20 +3,34 @@ import ApplicationServices
 import KnurlinkCore
 import os
 
-enum SafariAutomationError: LocalizedError {
+enum SafariAutomationError: LocalizedError, Equatable {
     case notTrusted
     case notRunning
     case profileMissing(String)
+    case privateWindowUnavailable
     case windowDidNotOpen
     case addressFieldUnavailable
 
     var errorDescription: String? {
         switch self {
-        case .notTrusted: "knURLink needs Accessibility access to open Safari profiles."
+        case .notTrusted: "knURLink needs Accessibility access to open Safari profiles and private windows."
         case .notRunning: "Safari didn't start in time."
         case let .profileMissing(name): "Safari has no profile named \(name)."
+        case .privateWindowUnavailable: "Couldn't find New Private Window in Safari's File menu."
         case .windowDidNotOpen: "Safari didn't open a new window."
         case .addressFieldUnavailable: "Couldn't reach Safari's address field."
+        }
+    }
+}
+
+private enum NewWindow {
+    case profile(String)
+    case privateWindow
+
+    var missingError: SafariAutomationError {
+        switch self {
+        case let .profile(name): .profileMissing(name)
+        case .privateWindow: .privateWindowUnavailable
         }
     }
 }
@@ -56,12 +70,20 @@ enum SafariAutomation {
     }
 
     static func open(_ url: URL, inProfile name: String, app: BrowserApp, completion: @escaping (Error?) -> Void) {
+        open(url, in: .profile(name), app: app, completion: completion)
+    }
+
+    static func openPrivately(_ url: URL, app: BrowserApp, completion: @escaping (Error?) -> Void) {
+        open(url, in: .privateWindow, app: app, completion: completion)
+    }
+
+    private static func open(_ url: URL, in newWindow: NewWindow, app: BrowserApp, completion: @escaping (Error?) -> Void) {
         queue.async {
             do {
-                try openSynchronously(url, inProfile: name, app: app)
+                try openSynchronously(url, in: newWindow, app: app)
                 completion(nil)
             } catch {
-                logger.error("Safari profile open failed: \(error.localizedDescription, privacy: .public)")
+                logger.error("Safari open failed: \(error.localizedDescription, privacy: .public)")
                 completion(error)
             }
         }
@@ -75,18 +97,17 @@ enum SafariAutomation {
         return SafariProfileMenu.profileNames(fromMenuTitles: items.compactMap { string($0, kAXTitleAttribute) })
     }
 
-    private static func openSynchronously(_ url: URL, inProfile name: String, app: BrowserApp) throws {
+    private static func openSynchronously(_ url: URL, in newWindow: NewWindow, app: BrowserApp) throws {
         guard isTrusted else { throw SafariAutomationError.notTrusted }
         let running = try launchIfNeeded(app)
         let element = applicationElement(for: running)
-        let title = SafariProfileMenu.menuTitle(forProfile: name)
 
-        let profileItem = try waitFor(timeout: 10, failure: SafariAutomationError.profileMissing(name)) {
-            fileMenuItems(of: element).first { string($0, kAXTitleAttribute) == title }
+        let newWindowItem = try waitFor(timeout: 10, failure: newWindow.missingError) {
+            fileMenuItems(of: element).first { opens(newWindow, $0) }
         }
         let existingWindows = windows(of: element)
-        guard AXUIElementPerformAction(profileItem, kAXPressAction as CFString) == .success else {
-            throw SafariAutomationError.profileMissing(name)
+        guard AXUIElementPerformAction(newWindowItem, kAXPressAction as CFString) == .success else {
+            throw newWindow.missingError
         }
         let window = try waitFor(timeout: 5, failure: SafariAutomationError.windowDidNotOpen) {
             windows(of: element).first { candidate in !existingWindows.contains { CFEqual($0, candidate) } }
@@ -134,6 +155,19 @@ enum SafariAutomation {
         guard barItems.count > 2, let fileMenu = children(of: barItems[2]).first else { return [] }
         return children(of: fileMenu).flatMap { item in
             [item] + children(of: item).flatMap { children(of: $0) }
+        }
+    }
+
+    private static func opens(_ newWindow: NewWindow, _ item: AXUIElement) -> Bool {
+        switch newWindow {
+        case let .profile(name):
+            string(item, kAXTitleAttribute) == SafariProfileMenu.menuTitle(forProfile: name)
+        case .privateWindow:
+            SafariProfileMenu.isPrivateWindowItem(
+                title: string(item, kAXTitleAttribute),
+                commandKey: string(item, kAXMenuItemCmdCharAttribute),
+                modifiers: number(item, kAXMenuItemCmdModifiersAttribute)
+            )
         }
     }
 

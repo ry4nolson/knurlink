@@ -469,9 +469,9 @@ private struct SafariProfileAccessRow: View {
             if !model.hasAccessibilityAccess {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Label("Safari profiles need Accessibility access", systemImage: "hand.raised.fill")
+                        Label("Safari profiles and private windows need Accessibility access", systemImage: "hand.raised.fill")
                             .foregroundStyle(.orange)
-                        Text("macOS has no way to open a Safari profile directly, so knURLink opens a new window in the profile through Safari's File menu, then hands it the link.")
+                        Text("macOS has no way to open a Safari profile or private window directly, so knURLink opens the window through Safari's File menu, then hands it the link.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

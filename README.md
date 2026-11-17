@@ -15,7 +15,7 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 - **path rules.** `github.com/my-org` matches that path and everything under it, on whole path segments.
 - **source app rules.** leave the link blank and pick an app to route everything that app sends. or fill in both to scope a domain to one app.
 - **safari profiles.** macOS has no way to launch a Safari profile, so knURLink uses the Accessibility API to pick the profile's "New Window" item from Safari's File menu, then hands that window the link. it asks for Accessibility access under Browsers in settings. profiles are read from Safari's menu while it's running and remembered after that.
-- **private windows.** hold shift while you pick a bubble, or turn on Private for a rule, and the link opens in an incognito or private window. works for Chrome, Brave, Vivaldi, Chromium, Edge, and Firefox. Safari doesn't let other apps open private windows, so it opens a normal one.
+- **private windows.** hold shift while you pick a bubble, or turn on Private for a rule, and the link opens in an incognito or private window. works for Chrome, Brave, Vivaldi, Chromium, Edge, Firefox, and Safari. Safari has no launch flag for it, so knURLink picks New Private Window from Safari's File menu, the same way it opens profiles. that needs Accessibility access too. Safari private windows don't belong to a profile, so a private link ignores the rule's profile.
 - **"always" checkbox.** tick it in the picker (or press A) to save a domain rule on the spot.
 - **test a link.** paste a link in settings to see which rule wins, and which other rules matched but lost.
 - **launch at login.** a toggle in settings, off by default. it starts quietly in the menu bar.
