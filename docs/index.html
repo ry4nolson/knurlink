@@ -71,7 +71,7 @@
         </a>
         <a class="btn" href="https://github.com/ry4nolson/knurlink">View the source</a>
       </div>
-      <p class="meta">macOS 14 or later · signed and notarized · v1.0.0</p>
+      <p class="meta">macOS 14 or later · signed and notarized · v1.1.0</p>
       <p class="story">built because a coworker keeps posting tiktok links in Slack, and they kept opening in a work Chrome profile. now they go to Brave.</p>
     </div>
 
@@ -265,7 +265,7 @@
         <tr><td>Chrome, Brave, Vivaldi, Chromium</td><td><span class="ok">incognito</span></td></tr>
         <tr><td>Edge</td><td><span class="ok">InPrivate</span></td></tr>
         <tr><td>Firefox</td><td><span class="ok">private window</span></td></tr>
-        <tr><td>Safari</td><td><span class="meh">a normal window.</span> Safari doesn't let other apps open private windows.</td></tr>
+        <tr><td>Safari</td><td><span class="ok">private window</span> through the File menu. <a href="#safari">how</a></td></tr>
       </tbody>
     </table>
   </div>
@@ -274,14 +274,14 @@
 <section class="section" id="safari">
   <div class="wrap split">
     <div>
-      <h2>safari profiles</h2>
-      <p class="section-lede">macOS has no way to launch a Safari profile. so knURLink does it the long way.</p>
+      <h2>safari profiles and private windows</h2>
+      <p class="section-lede">macOS has no way to launch a Safari profile or a private window. so knURLink does it the long way.</p>
       <ol class="numbered">
-        <li>it uses the Accessibility API to pick the profile's "New Window" item from Safari's File menu.</li>
+        <li>it uses the Accessibility API to pick the profile's "New Window" item, or New Private Window, from Safari's File menu.</li>
         <li>it hands that new window the link.</li>
-        <li>if anything goes wrong, the link opens in plain Safari. you still get your page.</li>
+        <li>if a profile goes wrong, the link opens in plain Safari. if a private window goes wrong, it asks before opening a normal one.</li>
       </ol>
-      <p class="fine">it asks for Accessibility access under Browsers in settings. profile names are read from Safari's menu while it's running and remembered after that, so Safari needs to have run once with knURLink open. it reads the English menu titles, so other macOS languages won't find them yet.</p>
+      <p class="fine">it asks for Accessibility access under Browsers in settings. profile names are read from Safari's menu while it's running and remembered after that, so Safari needs to have run once with knURLink open. it reads the English menu titles, so other macOS languages won't find them yet. New Private Window is found by its shortcut too, so private windows work in any language. Safari private windows don't belong to a profile, so a private link ignores the rule's profile.</p>
     </div>
     <div class="menu-mock" aria-hidden="true">
       <div class="menu-bar"><span>Safari</span><span class="on">File</span><span>Edit</span><span>View</span></div>
@@ -369,7 +369,7 @@ cd knurlink
     <ul class="limits">
       <li>profiles are detected for Chromium browsers (Chrome, Brave, Edge, Vivaldi, Chromium) and Safari. Firefox shows up as one bubble.</li>
       <li>source app rules depend on macOS reporting who sent the link. links opened with <code>open</code> from a terminal come through with no sender.</li>
-      <li>Safari profiles need Accessibility access and English menu titles.</li>
+      <li>Safari profiles need Accessibility access and English menu titles. Safari private windows need Accessibility access.</li>
       <li>local builds are ad-hoc signed unless you name an identity. only tagged releases are notarized.</li>
     </ul>
   </div>

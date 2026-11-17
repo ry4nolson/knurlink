@@ -428,7 +428,8 @@ h1 { font-size: clamp(38px, 6vw, 64px); font-weight: 800; letter-spacing: -0.035
 .specificity ol { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 6px; }
 .specificity .fine { margin: 0; }
 
-.keys, .matrix { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 15px; }
+.keys, .matrix { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font-size: 15px; }
+.matrix { overflow: hidden; }
 .keys caption { caption-side: top; text-align: left; font: 600 12px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 0 10px; }
 .keys td, .matrix td, .matrix th { padding: 12px 16px; border-top: 1px solid var(--line); vertical-align: top; text-align: left; }
 .keys tr:first-child td { border-top: 0; }
