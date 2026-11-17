@@ -63,17 +63,14 @@ swift test
 
 ## releasing
 
-update `CHANGELOG.md` with a section for the version, then tag it:
+there's nothing to tag by hand. every push to `main` that touches the app (`Sources`, `Resources`, `Package.swift`, or the build scripts) cuts a release.
 
-```bash
-git tag v1.0.0
-```
+- add a line under `## [Unreleased]` in `CHANGELOG.md` with your change.
+- an entry under `### Added` bumps the minor version. anything else bumps the patch.
+- for a bigger jump, set `CFBundleShortVersionString` in `Resources/Info.plist` to the version you want. a higher number there wins.
+- with nothing under Unreleased, the release notes list the commits instead.
 
-```bash
-git push origin v1.0.0
-```
-
-the [release workflow](.github/workflows/release.yml) sets the version from the tag, runs the tests, signs, notarizes, and publishes a dmg and a zip. it needs four repo secrets, and stops if the cert is missing instead of publishing an unsigned build:
+the [release workflow](.github/workflows/release.yml) works out the version, stamps the changelog, runs the tests, signs, notarizes, publishes a dmg and a zip, and commits the version back to `main` as `Release vX.Y.Z`. it needs four repo secrets, and stops if the cert is missing instead of publishing an unsigned build:
 
 | secret | what it is |
 |--------|------------|

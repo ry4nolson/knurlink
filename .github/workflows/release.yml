@@ -2,11 +2,21 @@ name: release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - 'Sources/**'
+      - 'Resources/**'
+      - 'Package.swift'
+      - 'scripts/build-app.sh'
+      - 'scripts/create-dmg.sh'
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -15,16 +25,41 @@ jobs:
       APPLE_TEAM_ID: M3C8F32WA5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
 
-      - name: Set version from tag
+      - name: Check changelog entries
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          PREVIOUS_TAG="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
+          if [ -n "$PREVIOUS_TAG" ]; then
+            git show "$PREVIOUS_TAG:CHANGELOG.md" > "$RUNNER_TEMP/tagged-changelog.md"
+            node scripts/check-changelog.mjs "$RUNNER_TEMP/tagged-changelog.md"
+          fi
+          echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> "$GITHUB_ENV"
+
+      - name: Determine version
+        run: |
+          VERSION="$(node scripts/next-version.mjs)"
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" Resources/Info.plist
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Version set to $VERSION"
+
+      - name: Stamp changelog
+        run: |
+          node scripts/stamp-changelog.mjs "$VERSION" "$(date -u +%F)" > "$RUNNER_TEMP/changelog_notes.md"
+          if [ -s "$RUNNER_TEMP/changelog_notes.md" ]; then
+            echo "CHANGELOG_STAMPED=true" >> "$GITHUB_ENV"
+            echo "Moved [Unreleased] under [$VERSION]"
+          else
+            echo "No unreleased changelog entries; release notes will list commits"
+          fi
 
       - name: Run tests
-        run: swift test
+        run: |
+          node --test scripts/
+          swift test
 
       - name: Import signing certificate
         env:
@@ -57,36 +92,79 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         run: |
+          staple() {
+            for attempt in 1 2 3; do
+              if xcrun stapler staple "$1"; then
+                return 0
+              fi
+              echo "Stapling failed, retrying in 20 seconds..."
+              sleep 20
+            done
+            return 1
+          }
           cd dist
           ditto -c -k --keepParent knURLink.app knURLink.zip
           xcrun notarytool submit knURLink.zip --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
-          xcrun stapler staple knURLink.app
+          staple knURLink.app
           rm knURLink.zip
           ditto -c -k --keepParent knURLink.app knURLink.zip
-
-      - name: Create and notarize disk image
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-        run: |
+          cd ..
           ./scripts/create-dmg.sh
           codesign --force --timestamp --sign "$KNURLINK_SIGN_IDENTITY" dist/knURLink.dmg
           xcrun notarytool submit dist/knURLink.dmg --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
-          xcrun stapler staple dist/knURLink.dmg
+          staple dist/knURLink.dmg
           spctl --assess --type open --context context:primary-signature --verbose=2 dist/knURLink.dmg
 
-      - name: Extract release notes
+      - name: Write release notes
         run: |
-          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
-          if [ -z "$NOTES" ]; then
-            NOTES="Release v$VERSION"
+          if [ "${CHANGELOG_STAMPED:-}" = "true" ]; then
+            NOTES="$(cat "$RUNNER_TEMP/changelog_notes.md")"
+          else
+            RANGE="${PREVIOUS_TAG:+$PREVIOUS_TAG..}HEAD"
+            NOTES=$(git log "$RANGE" --no-merges --format='- %s')
           fi
-          echo "$NOTES" > "$RUNNER_TEMP/release_notes.md"
+          {
+            echo "$NOTES"
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo
+              echo "**Full changelog:** https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...v$VERSION"
+            fi
+          } > "$RUNNER_TEMP/release_notes.md"
+          cat "$RUNNER_TEMP/release_notes.md"
+
+      - name: Commit release metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Resources/Info.plist
+          if [ "${CHANGELOG_STAMPED:-}" = "true" ]; then
+            git add CHANGELOG.md
+          fi
+          if git diff --cached --quiet; then
+            echo "No version or changelog changes to commit"
+          else
+            git commit -m "Release v$VERSION"
+            pushed=false
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push origin HEAD:main; then
+                pushed=true
+                break
+              fi
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            done
+            if [ "$pushed" != "true" ]; then
+              echo "::error::Could not push the release metadata, so nothing was published. Run the workflow again."
+              exit 1
+            fi
+          fi
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/knURLink.dmg dist/knURLink.zip \
-            --title "knURLink $VERSION" \
+          gh release create "v$VERSION" dist/knURLink.dmg dist/knURLink.zip \
+            --target "$RELEASE_SHA" \
+            --title "knURLink v$VERSION" \
             --notes-file "$RUNNER_TEMP/release_notes.md"
