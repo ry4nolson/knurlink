@@ -124,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard picker == nil, !pendingLinks.isEmpty else { return }
         let link = pendingLinks.removeFirst()
         let url = link.url
-        model.refresh()
+        defer { model.refreshAppsInBackground() }
 
         if let route = model.route(for: url, source: link.source) {
             Launcher.open(url, with: route.option, privately: route.privately)

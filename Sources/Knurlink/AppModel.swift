@@ -29,6 +29,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var hasAccessibilityAccess = SafariAutomation.isTrusted
 
     private var accessibilityPoll: Timer?
+    private var isRefreshingApps = false
+    private static let catalogQueue = DispatchQueue(label: "dev.knurlink.Knurlink.catalog", qos: .utility)
 
     private let store: ConfigStore
 
@@ -67,6 +69,19 @@ final class AppModel: ObservableObject {
         let current = NSWorkspace.shared.urlForApplication(toOpen: probe).flatMap { Bundle(url: $0)?.bundleIdentifier }
         isDefaultBrowser = current != nil && current == Bundle.main.bundleIdentifier
         refreshLoginItem()
+    }
+
+    func refreshAppsInBackground() {
+        guard !isRefreshingApps else { return }
+        isRefreshingApps = true
+        Self.catalogQueue.async { [weak self] in
+            let apps = BrowserCatalog.installedApps()
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isRefreshingApps = false
+                self.apps = apps
+            }
+        }
     }
 
     func setLaunchesAtLogin(_ enabled: Bool) {
