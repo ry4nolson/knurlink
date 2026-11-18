@@ -7,6 +7,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-18
+
 ### Fixed
 - Links no longer take a few seconds to open after knURLink has sat idle. Routing uses the cached browser list and refreshes it in the background afterward
 
