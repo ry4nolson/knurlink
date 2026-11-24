@@ -7,6 +7,9 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Hold Option while you click a link to skip your rules and pick a browser from the bubbles
+
 ## [1.1.1] - 2026-11-18
 
 ### Fixed

@@ -23,6 +23,8 @@ the name is a knurl (the grip pattern you cut into a tool handle) with a url hid
 
 when more than one rule matches, the most specific link wins: longer domain first, then longer path. a rule with no link is the fallback.
 
+to go around a rule once, hold option while you click the link. knURLink skips your rules and shows the bubbles.
+
 ## install
 
 grab `knURLink.dmg` from the [latest release](https://github.com/ry4nolson/knurlink/releases/latest), drag the app to Applications, open it, and click **Make Default**. release builds are signed and notarized. it needs macOS 14 or later.
