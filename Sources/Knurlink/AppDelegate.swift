@@ -8,6 +8,7 @@ import SwiftUI
 private struct IncomingLink {
     let url: URL
     let source: String?
+    let forcesPicker: Bool
 }
 
 @MainActor
@@ -70,9 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func enqueue(_ urls: [URL], source: String?) {
         hasReceivedURL = true
+        let forcesPicker = NSEvent.modifierFlags.contains(.option)
         pendingLinks.append(contentsOf: urls
             .filter { ["http", "https"].contains($0.scheme?.lowercased() ?? "") }
-            .map { IncomingLink(url: $0, source: source) })
+            .map { IncomingLink(url: $0, source: source, forcesPicker: forcesPicker) })
         processNextURL()
     }
 
@@ -126,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let url = link.url
         defer { model.refreshAppsInBackground() }
 
-        if let route = model.route(for: url, source: link.source) {
+        if !link.forcesPicker, let route = model.route(for: url, source: link.source) {
             Launcher.open(url, with: route.option, privately: route.privately)
             processNextURL()
             return
